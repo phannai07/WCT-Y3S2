@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Management</title>
+</head>
+<body>
+    <h1>Student Management</h1>
+
+    <form id="studentForm">
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name"><br>
+        <label for="age">Age:</label><br>
+        <input type="number" id="age" name="age"><br>
+        <label for="grade">Grade:</label><br>
+        <input type="text" id="grade" name="grade"><br><br>
+        <button type="button" onclick="addStudent()">Add Student</button>
+    </form>
+
+    <h1>Student List</h1>
+    <ul id="studentList">
+    </ul>
+
+    <script>
+        let students = []; 
+
+        function addStudent() {
+            const name = document.getElementById("name").value;
+            const age = document.getElementById("age").value;
+            const grade = document.getElementById("grade").value;
+
+            fetch('student_management.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=add&name=${name}&age=${age}&grade=${grade}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    students.push({ name, age, grade });
+                    displayStudents(); 
+                    document.getElementById("studentForm").reset(); 
+                } else {
+                    alert("Error adding student: " + data.message);
+                }
+            });
+        }
+
+        function displayStudents() {
+            const studentList = document.getElementById("studentList");
+            studentList.innerHTML = '';
+
+            students.forEach((student, index) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${student.name} - Age: ${student.age}, Grade: ${student.grade}`;
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = () => deleteStudent(index);
+                listItem.appendChild(deleteButton);
+
+                const editButton = document.createElement("button");
+                editButton.textContent = "Edit";
+                editButton.onclick = () => editStudent(index);
+                listItem.appendChild(editButton);
+
+                studentList.appendChild(listItem);
+            });
+        }
+
+        function deleteStudent(index) {
+            fetch('student_management.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=delete&index=${index}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    students.splice(index, 1); 
+                    displayStudents(); 
+                } else {
+                    alert("Error deleting student: " + data.message);
+                }
+            });
+        }
+
+        function editStudent(index) {
+            const student = students[index];
+            const newName = prompt("Enter new name:", student.name);
+            const newAge = prompt("Enter new age:", student.age);
+            const newGrade = prompt("Enter new grade:", student.grade);
+
+            if (newName && newAge && newGrade) {
+                fetch('student_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=edit&index=${index}&name=${newName}&age=${newAge}&grade=${newGrade}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        students[index] = { name: newName, age: newAge, grade: newGrade }; 
+                        displayStudents(); 
+                        alert("Error editing student: " + data.message);
+                    }
+                });
+            }
+        }
+        displayStudents();
+    </script>
+</body>
+</html>
